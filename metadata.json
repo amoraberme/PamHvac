@@ -1,0 +1,6 @@
+{
+  "name": "HVAC Procurement Engine",
+  "description": "Programmatic ingestion, JSON schema validation, and itemized cost calculation engine for HVAC procurement and installation requests.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
