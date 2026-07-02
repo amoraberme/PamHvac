@@ -44,6 +44,23 @@ export default function InteractiveForm({ payload, onChangeAction }: Interactive
 
     if (resolvedModel) {
       const stdPipingRate = getStandardPipingRate(form_factor, cooling_capacity, resolvedModel.label);
+      
+      let indoor_selected = electrical_breaker_options.indoor_breaker.selected;
+      let outdoor_selected = electrical_breaker_options.outdoor_breaker.selected;
+      if (equipment_brand === "Midea") {
+        indoor_selected = true;
+        outdoor_selected = false;
+      } else if (equipment_brand === "Matrix") {
+        indoor_selected = false;
+        outdoor_selected = true;
+      } else if (equipment_brand === "Carrier") {
+        if (indoor_selected && outdoor_selected) {
+          outdoor_selected = false;
+        } else if (!indoor_selected && !outdoor_selected) {
+          indoor_selected = true;
+        }
+      }
+
       onChangeAction({
         ...payload,
         selection_flow: {
@@ -51,25 +68,25 @@ export default function InteractiveForm({ payload, onChangeAction }: Interactive
           resolved_model_details: {
             model_number: resolvedModel.model_number,
             unit_base_price: resolvedModel.unit_base_price,
-            unit_labor_price: parseFloat((resolvedModel.unit_base_price * 0.15).toFixed(2))
+            unit_labor_price: 0
           }
         },
         installation_parameters: {
           ...installation_parameters,
           excess_piping_rate_per_foot: stdPipingRate,
           base_piping_fee: 2000,
-          flat_wiring_connectivity_fee: 2000,
+          flat_wiring_connectivity_fee: 0,
           dismantling_services: {
             ...dismantling_services,
             fee_per_unit: dismantling_services.fee_per_unit === 85.00 ? 2000.00 : dismantling_services.fee_per_unit
           },
           electrical_breaker_options: {
             indoor_breaker: {
-              ...electrical_breaker_options.indoor_breaker,
+              selected: indoor_selected,
               unit_price_input: electrical_breaker_options.indoor_breaker.unit_price_input === 45.00 ? 750.00 : electrical_breaker_options.indoor_breaker.unit_price_input
             },
             outdoor_breaker: {
-              ...electrical_breaker_options.outdoor_breaker,
+              selected: outdoor_selected,
               unit_price_input: electrical_breaker_options.outdoor_breaker.unit_price_input === 65.00 ? 1000.00 : electrical_breaker_options.outdoor_breaker.unit_price_input
             }
           },
@@ -127,17 +144,36 @@ export default function InteractiveForm({ payload, onChangeAction }: Interactive
   };
 
   const updateBreaker = (type: "indoor_breaker" | "outdoor_breaker", key: "selected" | "unit_price_input", value: any) => {
+    let nextBreakers = {
+      indoor_breaker: { ...electrical_breaker_options.indoor_breaker },
+      outdoor_breaker: { ...electrical_breaker_options.outdoor_breaker }
+    };
+    if (key === "selected") {
+      if (equipment_brand === "Midea") {
+        nextBreakers.indoor_breaker.selected = true;
+        nextBreakers.outdoor_breaker.selected = false;
+      } else if (equipment_brand === "Matrix") {
+        nextBreakers.indoor_breaker.selected = false;
+        nextBreakers.outdoor_breaker.selected = true;
+      } else {
+        // Carrier
+        if (type === "indoor_breaker") {
+          nextBreakers.indoor_breaker.selected = value;
+          nextBreakers.outdoor_breaker.selected = !value;
+        } else {
+          nextBreakers.outdoor_breaker.selected = value;
+          nextBreakers.indoor_breaker.selected = !value;
+        }
+      }
+    } else {
+      nextBreakers[type][key] = value;
+    }
+
     onChangeAction({
       ...payload,
       installation_parameters: {
         ...installation_parameters,
-        electrical_breaker_options: {
-          ...electrical_breaker_options,
-          [type]: {
-            ...electrical_breaker_options[type],
-            [key]: value
-          }
-        }
+        electrical_breaker_options: nextBreakers
       }
     });
   };
@@ -286,37 +322,6 @@ export default function InteractiveForm({ payload, onChangeAction }: Interactive
                   </div>
                   <span className="text-[9px] text-zinc-400 italic block">Currently overrides {resolved_model_details.model_number} baseline rate.</span>
                 </div>
-
-                {/* Unit Labor Price */}
-                <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-200 space-y-1.5">
-                  <label className="text-[10px] font-mono text-zinc-600 uppercase font-bold block">
-                    Unit Labor Price (₱)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-zinc-400 font-mono">₱</span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={50}
-                      value={resolved_model_details.unit_labor_price !== undefined ? resolved_model_details.unit_labor_price : parseFloat((resolved_model_details.unit_base_price * 0.15).toFixed(2))}
-                      onChange={(e) => {
-                        onChangeAction({
-                          ...payload,
-                          selection_flow: {
-                            ...selection_flow,
-                            resolved_model_details: {
-                              ...resolved_model_details,
-                              unit_labor_price: Math.max(0, parseFloat(e.target.value) || 0)
-                            }
-                          }
-                        });
-                      }}
-                      className="w-full pl-7 pr-3 py-1.5 bg-white border border-zinc-200 rounded text-xs font-mono font-semibold text-zinc-850 focus:outline-none focus:border-[#005A36]"
-                    />
-                  </div>
-                  <span className="text-[9px] text-zinc-400 italic block">Currently overrides {resolved_model_details.model_number} default installation labor rate.</span>
-                </div>
-
                 {/* Base Piping Surcharge Fee */}
                 <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-200 space-y-1.5">
                   <label className="text-[10px] font-mono text-zinc-600 uppercase font-bold block">
@@ -369,32 +374,6 @@ export default function InteractiveForm({ payload, onChangeAction }: Interactive
                     />
                   </div>
                   <span className="text-[9px] text-zinc-400 italic block">Rate applied to cumulative feet in excess of the standard 10 ft limit.</span>
-                </div>
-
-                {/* Flat Wiring Connectivity Fee */}
-                <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-200 space-y-1.5">
-                  <label className="text-[10px] font-mono text-zinc-600 uppercase font-bold block">
-                    Flat Wiring & Conduit Connectivity Fee (₱)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-zinc-400 font-mono">₱</span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={50}
-                      value={flat_wiring_connectivity_fee}
-                      onChange={(e) => {
-                        onChangeAction({
-                          ...payload,
-                          installation_parameters: {
-                            ...installation_parameters,
-                            flat_wiring_connectivity_fee: Math.max(0, parseFloat(e.target.value) || 0)
-                          }
-                        });
-                      }}
-                      className="w-full pl-7 pr-3 py-1.5 bg-white border border-zinc-200 rounded text-xs font-mono font-semibold text-zinc-850 focus:outline-none focus:border-[#005A36]"
-                    />
-                  </div>
                 </div>
 
                 {/* Dismantling Fee per unit */}
@@ -688,7 +667,7 @@ export default function InteractiveForm({ payload, onChangeAction }: Interactive
             <span>Resolved Air-Handling Model Details &amp; Enterprise Rate</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-1.5 sm:col-span-2 md:col-span-2">
               <label className="text-[10px] font-mono text-emerald-800 uppercase tracking-wider block font-bold">
                 Select Available Model &amp; Pricing Tier
@@ -708,7 +687,6 @@ export default function InteractiveForm({ payload, onChangeAction }: Interactive
                   if (val === "custom" || !val) return;
                   const [selectedModelNo, priceText] = val.split(":");
                   const newPrice = parseFloat(priceText) || 0;
-                  const standardLabor = parseFloat((newPrice * 0.15).toFixed(2));
                   onChangeAction({
                     ...payload,
                     selection_flow: {
@@ -716,7 +694,7 @@ export default function InteractiveForm({ payload, onChangeAction }: Interactive
                       resolved_model_details: {
                         model_number: selectedModelNo,
                         unit_base_price: newPrice,
-                        unit_labor_price: standardLabor
+                        unit_labor_price: 0
                       }
                     }
                   });
@@ -815,54 +793,6 @@ export default function InteractiveForm({ payload, onChangeAction }: Interactive
                 </div>
               )}
             </div>
-
-            <div className="space-y-1.5 md:col-span-1">
-              <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block font-bold">
-                Unit Labor (PHP)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-2 text-zinc-400 text-xs font-mono">₱</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={50}
-                  value={resolved_model_details.unit_labor_price !== undefined ? resolved_model_details.unit_labor_price : parseFloat((resolved_model_details.unit_base_price * 0.15).toFixed(2))}
-                  onChange={(e) => onChangeAction({
-                    ...payload,
-                    selection_flow: {
-                      ...selection_flow,
-                      resolved_model_details: {
-                        ...resolved_model_details,
-                        unit_labor_price: Math.max(0, parseFloat(e.target.value) || 0)
-                      }
-                    }
-                  })}
-                  className={`w-full pl-7 pr-3 py-2 bg-white border text-zinc-800 text-xs rounded-lg focus:outline-none font-mono font-semibold transition-colors ${
-                    isLaborTooLow || isLaborTooHigh 
-                      ? "border-amber-400 focus:border-amber-600 bg-amber-50/20" 
-                      : "border-zinc-200 focus:border-emerald-800"
-                  }`}
-                />
-              </div>
-              {isLaborTooLow && (
-                <div className="text-[10px] text-amber-700 leading-tight flex items-start gap-1 font-medium bg-amber-50 border border-amber-200 p-1.5 rounded-lg mt-1">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
-                  <span>Labor rate is below standard 10% band (₱{minLabor.toLocaleString()}). May under-compensate installers.</span>
-                </div>
-              )}
-              {isLaborTooHigh && (
-                <div className="text-[10px] text-amber-700 leading-tight flex items-start gap-1 font-medium bg-amber-50 border border-amber-200 p-1.5 rounded-lg mt-1">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
-                  <span>Labor rate is above standard 25% band (₱{maxLabor.toLocaleString()}). Over-estimates labor.</span>
-                </div>
-              )}
-              {!isLaborTooLow && !isLaborTooHigh && (
-                <div className="text-[10px] text-emerald-700 leading-tight flex items-center gap-1 font-medium mt-1 pl-1">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                  <span>Within standard labor band (10% - 25% of base price).</span>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
@@ -957,11 +887,12 @@ export default function InteractiveForm({ payload, onChangeAction }: Interactive
                   <span className="text-[10px] font-mono text-zinc-500 font-bold uppercase block">Indoor Circuit Breaker</span>
                   <span className="text-[9px] text-zinc-400 italic font-mono">Isolated terminal disconnects</span>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer select-none">
+                <label className={`relative inline-flex items-center select-none ${equipment_brand === "Midea" || equipment_brand === "Matrix" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                   <input
                     type="checkbox"
                     checked={electrical_breaker_options.indoor_breaker.selected}
                     onChange={(e) => updateBreaker("indoor_breaker", "selected", e.target.checked)}
+                    disabled={equipment_brand === "Midea" || equipment_brand === "Matrix"}
                     className="sr-only peer"
                   />
                   <div className="w-8 h-4 bg-zinc-200 rounded-full peer peer-checked:bg-emerald-800 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
@@ -1007,11 +938,12 @@ export default function InteractiveForm({ payload, onChangeAction }: Interactive
                   <span className="text-[10px] font-mono text-zinc-500 font-bold uppercase block">Outdoor Weatherproof Breaker</span>
                   <span className="text-[9px] text-zinc-400 italic font-mono">Condenser isolated lockouts</span>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer select-none">
+                <label className={`relative inline-flex items-center select-none ${equipment_brand === "Midea" || equipment_brand === "Matrix" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                   <input
                     type="checkbox"
                     checked={electrical_breaker_options.outdoor_breaker.selected}
                     onChange={(e) => updateBreaker("outdoor_breaker", "selected", e.target.checked)}
+                    disabled={equipment_brand === "Midea" || equipment_brand === "Matrix"}
                     className="sr-only peer"
                   />
                   <div className="w-8 h-4 bg-zinc-200 rounded-full peer peer-checked:bg-emerald-800 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
@@ -1051,45 +983,7 @@ export default function InteractiveForm({ payload, onChangeAction }: Interactive
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1.5 border-t border-zinc-150">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-mono text-zinc-500 uppercase block font-bold">
-                Electrical Labor &amp; Conduit (PHP)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-2 text-zinc-400 text-xs font-mono">₱</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={5}
-                  value={flat_wiring_connectivity_fee}
-                  onChange={(e) => updateInstParams("flat_wiring_connectivity_fee", Math.max(0, parseFloat(e.target.value) || 0))}
-                  className={`w-full pl-7 pr-3 py-2 bg-white border text-zinc-800 text-xs rounded-lg focus:outline-none font-mono font-semibold transition-colors ${
-                    isFlatWiringTooLow || isFlatWiringTooHigh
-                      ? "border-amber-400 bg-amber-50/20 focus:border-amber-600"
-                      : "border-zinc-200 focus:border-emerald-800"
-                  }`}
-                />
-              </div>
-              {isFlatWiringTooLow && (
-                <div className="text-[10px] text-amber-700 leading-tight flex items-start gap-1 font-medium bg-amber-50 border border-amber-200 p-1.5 rounded-lg mt-1">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
-                  <span>Below standard minimum (₱1,000). May not cover electrical scope.</span>
-                </div>
-              )}
-              {isFlatWiringTooHigh && (
-                <div className="text-[10px] text-amber-700 leading-tight flex items-start gap-1 font-medium bg-amber-50 border border-amber-200 p-1.5 rounded-lg mt-1">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
-                  <span>Above standard maximum (₱5,000). Over-estimates conduit work.</span>
-                </div>
-              )}
-              {!isFlatWiringTooLow && !isFlatWiringTooHigh && (
-                <div className="text-[10px] text-emerald-700 leading-tight flex items-center gap-1 font-medium mt-1 pl-1">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                  <span>Within standard flat wiring range (₱1,000 - ₱5,000).</span>
-                </div>
-              )}
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1.5 border-t border-zinc-150">
 
             <div className="space-y-1.5">
               <label className="text-[10px] font-mono text-zinc-500 uppercase block font-bold">

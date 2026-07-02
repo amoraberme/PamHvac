@@ -7,14 +7,9 @@ export function calculateCost(data: HVACProposalPayload): CostCalculationRespons
   const modelNo = data.selection_flow.resolved_model_details.model_number;
   const basePrice = Number(data.selection_flow.resolved_model_details.unit_base_price);
   
-  // Custom unit labor fallback to 15% if undefined/null
-  const unitLaborPrice = Number(
-    data.selection_flow.resolved_model_details.unit_labor_price !== undefined &&
-    data.selection_flow.resolved_model_details.unit_labor_price !== null
-      ? data.selection_flow.resolved_model_details.unit_labor_price
-      : basePrice * 0.15
-  );
-  const totalEquipmentUnitPrice = basePrice + unitLaborPrice;
+  // Custom unit labor fallback to 15% if undefined/null - REMOVED/SET TO 0
+  const unitLaborPrice = 0;
+  const totalEquipmentUnitPrice = basePrice;
 
   const qty = Number(data.installation_parameters.base_quantity);
   const pipingDistance = Number(data.installation_parameters.actual_piping_distance_feet);
@@ -23,7 +18,7 @@ export function calculateCost(data: HVACProposalPayload): CostCalculationRespons
   const excessRate = Number(data.installation_parameters.excess_piping_rate_per_foot);
   const basePipingFee = Number(data.installation_parameters.base_piping_fee);
 
-  const flatWiringFee = Number(data.installation_parameters.flat_wiring_connectivity_fee);
+  const flatWiringFee = 0; // REMOVED/SET TO 0
   const wireLength = Number(data.installation_parameters.wire_length_feet || 0);
   const wireRate = Number(data.installation_parameters.wire_rate_per_foot || 0);
 
@@ -31,9 +26,23 @@ export function calculateCost(data: HVACProposalPayload): CostCalculationRespons
   const decommissioningUnitFee = Number(data.installation_parameters.dismantling_services.fee_per_unit);
 
   const eb = data.installation_parameters.electrical_breaker_options;
-  const indoorSelected = eb.indoor_breaker.selected;
+  let indoorSelected = eb.indoor_breaker.selected;
+  let outdoorSelected = eb.outdoor_breaker.selected;
+
+  // Enforce breaker options: Midea = Indoor, Matrix = Outdoor, Carrier = either (mutually exclusive)
+  if (brand === "Midea") {
+    indoorSelected = true;
+    outdoorSelected = false;
+  } else if (brand === "Matrix") {
+    indoorSelected = false;
+    outdoorSelected = true;
+  } else if (brand === "Carrier") {
+    if (indoorSelected && outdoorSelected) {
+      outdoorSelected = false;
+    }
+  }
+
   const indoorUnitFee = Number(eb.indoor_breaker.unit_price_input);
-  const outdoorSelected = eb.outdoor_breaker.selected;
   const outdoorUnitFee = Number(eb.outdoor_breaker.unit_price_input);
 
   // 1. Base Hardware Cost (Material + Labor)

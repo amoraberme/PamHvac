@@ -26,7 +26,7 @@ const INITIAL_PAYLOAD: HVACProposalPayload = {
     resolved_model_details: {
       model_number: "CR-ST-25-ENT",
       unit_base_price: 1250.00,
-      unit_labor_price: 187.50
+      unit_labor_price: 0
     }
   },
   installation_parameters: {
@@ -40,11 +40,11 @@ const INITIAL_PAYLOAD: HVACProposalPayload = {
         unit_price_input: 750.00
       },
       outdoor_breaker: {
-        selected: true,
+        selected: false,
         unit_price_input: 1000.00
       }
     },
-    flat_wiring_connectivity_fee: 2000.00,
+    flat_wiring_connectivity_fee: 0,
     dismantling_services: {
       required: true,
       fee_per_unit: 2000.00

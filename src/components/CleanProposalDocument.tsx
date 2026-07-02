@@ -78,7 +78,7 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
     setSig3Title(department);
   }, [department]);
 
-  const [vatPercent, setVatPercent] = useState<number>(12); // standard 12% default for Philippines
+  const [vatPercent, setVatPercent] = useState<number>(0);
 
   const updateUnitLabor = (itemId: string, value: number) => {
     if (!onChangeAction) return;
@@ -205,7 +205,7 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
     qty: base_quantity,
     uom: "PCS",
     unitMat: resolved_model_details.unit_base_price * scale,
-    unitLabor: (resolved_model_details.unit_labor_price !== undefined ? resolved_model_details.unit_labor_price : (resolved_model_details.unit_base_price * 0.15)) * scale,
+    unitLabor: 0, // REMOVED/SET TO 0
   });
 
   // 1B. Piping Surcharges
@@ -272,25 +272,11 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
       id: "wire_run",
       category: "1C. ELECTRICAL & CONTROL SYSTEM",
       no: String(itemNo++).padStart(2, "0"),
-      description: `Heavy-Duty Electrical Power Feed Wire Run (${wireQty} ft run length)`,
+      description: "Electrical", // Changed from Heavy-Duty Electrical Power Feed Wire Run
       qty: wireQty,
       uom: "FT",
       unitMat: (payload.installation_parameters.wire_rate_per_foot * 0.80) * scale,
       unitLabor: (payload.installation_parameters.wire_labor_price !== undefined ? payload.installation_parameters.wire_labor_price : (payload.installation_parameters.wire_rate_per_foot * 0.20)) * scale,
-    });
-  }
-
-  const flatWiring = breakdown.electrical?.flat_wiring_connectivity_fee ?? 0;
-  if (flatWiring > 0) {
-    rawItems.push({
-      id: "flat_wiring",
-      category: "1C. ELECTRICAL & CONTROL SYSTEM",
-      no: String(itemNo++).padStart(2, "0"),
-      description: "Sub-meter Wiring & Conduit Installation Flat Rate Fee",
-      qty: 1,
-      uom: "LOT",
-      unitMat: (payload.installation_parameters.flat_wiring_connectivity_fee * 0.40) * scale,
-      unitLabor: (payload.installation_parameters.flat_wiring_labor_price !== undefined ? payload.installation_parameters.flat_wiring_labor_price : (payload.installation_parameters.flat_wiring_connectivity_fee * 0.60)) * scale,
     });
   }
 
@@ -310,7 +296,6 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
   }
 
   // General Services & Commissioning (Complimentary / Included in Equipment & Installation)
-  const engineeringTotal = 0;
   const adjFactor = 1.0;
 
   const formattedItems = rawItems.map(item => {
@@ -323,17 +308,6 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
       unitLabor: lab,
       total: tot
     };
-  });
-
-  formattedItems.push({
-    category: "1E. ENGINEERING, DESIGN & INSTALLATION",
-    no: String(itemNo++).padStart(2, "0"),
-    description: "Design & Installation (Complimentary / Included in System Cost)",
-    qty: 1,
-    uom: "LOT",
-    unitMat: 0,
-    unitLabor: 0,
-    total: 0
   });
 
   // Split items across Page 2 and Page 3 dynamically
@@ -365,7 +339,7 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
           <div className="space-y-1">
             <label className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider font-bold">Client / Partner Name</label>
             <input 
@@ -403,43 +377,6 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
               value={referenceNo} 
               onChange={(e) => setReferenceNo(e.target.value)}
               className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg font-sans text-xs font-mono focus:ring-1 focus:ring-emerald-800 focus:outline-none"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider font-bold">VAT Rate (%)</label>
-            <input 
-              type="number" 
-              min="0"
-              max="100"
-              step="any"
-              value={vatPercent} 
-              onChange={(e) => setVatPercent(parseFloat(e.target.value) || 0)}
-              className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg font-sans text-xs focus:ring-1 focus:ring-emerald-800 focus:outline-none"
-              placeholder="e.g. 12"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider font-bold">Unit Labor Price (₱)</label>
-            <input 
-              type="number" 
-              min="0"
-              step="50"
-              value={resolved_model_details.unit_labor_price !== undefined ? resolved_model_details.unit_labor_price : parseFloat((resolved_model_details.unit_base_price * 0.15).toFixed(2))} 
-              onChange={(e) => {
-                if (onChangeAction) {
-                  onChangeAction({
-                    ...payload,
-                    selection_flow: {
-                      ...selection_flow,
-                      resolved_model_details: {
-                        ...resolved_model_details,
-                        unit_labor_price: Math.max(0, parseFloat(e.target.value) || 0)
-                      }
-                    }
-                  });
-                }
-              }}
-              className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg font-sans text-xs focus:ring-1 focus:ring-emerald-800 focus:outline-none font-mono font-semibold"
             />
           </div>
         </div>
@@ -581,17 +518,16 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                     <tr className="bg-zinc-50 border-b border-zinc-200 text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-mono">
                       <th className="px-3 py-2 w-[5%] text-center">NO</th>
                       <th className="px-3 py-2 w-[50%]">DESCRIPTION</th>
-                      <th className="px-3 py-2 w-[8%] text-center">QTY</th>
-                      <th className="px-3 py-2 w-[8%] text-center">UOM</th>
-                      <th className="px-3 py-2 w-[11%] text-right">UNIT MAT.</th>
-                      <th className="px-3 py-2 w-[11%] text-right">UNIT LABOR</th>
-                      <th className="px-3 py-2 w-[11%] text-right">TOTAL</th>
+                      <th className="px-3 py-2 w-[10%] text-center">QTY</th>
+                      <th className="px-3 py-2 w-[10%] text-center">UOM</th>
+                      <th className="px-3 py-2 w-[12%] text-right">UNIT PRICE</th>
+                      <th className="px-3 py-2 w-[13%] text-right">TOTAL</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-150 text-zinc-700">
                     {/* 1A. HVAC Equipment */}
                     <tr className="bg-zinc-50/50 text-[10px] font-bold text-zinc-800 uppercase font-mono tracking-wide">
-                      <td colSpan={7} className="px-3 py-1.5 border-b border-zinc-200">
+                      <td colSpan={6} className="px-3 py-1.5 border-b border-zinc-200">
                         1A. SYSTEM EQUIPMENTS
                       </td>
                     </tr>
@@ -601,33 +537,14 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                         <td className="px-3 py-2 font-medium text-zinc-900">{item.description}</td>
                         <td className="px-3 py-2 text-center font-mono">{item.qty}</td>
                         <td className="px-3 py-2 text-center font-mono">{item.uom}</td>
-                        <td className="px-3 py-2 text-right font-mono">₱{item.unitMat.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td className="px-3 py-1 text-right font-mono">
-                          {isDownloadingPdf ? (
-                            <span className="text-[10px] font-mono font-semibold text-zinc-800">
-                              ₱{item.unitLabor.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          ) : (
-                            <div className="flex items-center justify-end gap-1">
-                              <span className="text-zinc-400 text-[10px]">₱</span>
-                              <input
-                                type="number"
-                                min="0"
-                                step="50"
-                                value={parseFloat(item.unitLabor.toFixed(2))}
-                                onChange={(e) => updateUnitLabor(item.id, parseFloat(e.target.value) || 0)}
-                                className="w-20 text-right bg-zinc-50 border border-zinc-200 hover:border-zinc-300 focus:border-emerald-800 focus:bg-white px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold text-zinc-800 transition-all focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              />
-                            </div>
-                          )}
-                        </td>
+                        <td className="px-3 py-2 text-right font-mono">₱{(item.unitMat + item.unitLabor).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td className="px-3 py-2 text-right font-bold text-zinc-900 font-mono">₱{item.total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       </tr>
                     ))}
 
                     {/* 1B. Piping & Installation */}
                     <tr className="bg-zinc-50/50 text-[10px] font-bold text-zinc-800 uppercase font-mono tracking-wide">
-                      <td colSpan={7} className="px-3 py-1.5 border-t border-b border-zinc-200">
+                      <td colSpan={6} className="px-3 py-1.5 border-t border-b border-zinc-200">
                         1B. INSTALLATION &amp; REFRIGERATION MATERIALS
                       </td>
                     </tr>
@@ -637,26 +554,7 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                         <td className="px-3 py-2 font-medium text-zinc-900">{item.description}</td>
                         <td className="px-3 py-2 text-center font-mono">{item.qty}</td>
                         <td className="px-3 py-2 text-center font-mono">{item.uom}</td>
-                        <td className="px-3 py-2 text-right font-mono">₱{item.unitMat.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td className="px-3 py-1 text-right font-mono">
-                          {isDownloadingPdf ? (
-                            <span className="text-[10px] font-mono font-semibold text-zinc-800">
-                              ₱{item.unitLabor.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          ) : (
-                            <div className="flex items-center justify-end gap-1">
-                              <span className="text-zinc-400 text-[10px]">₱</span>
-                              <input
-                                type="number"
-                                min="0"
-                                step="50"
-                                value={parseFloat(item.unitLabor.toFixed(2))}
-                                onChange={(e) => updateUnitLabor(item.id, parseFloat(e.target.value) || 0)}
-                                className="w-20 text-right bg-zinc-50 border border-zinc-200 hover:border-zinc-300 focus:border-emerald-800 focus:bg-white px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold text-zinc-800 transition-all focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              />
-                            </div>
-                          )}
-                        </td>
+                        <td className="px-3 py-2 text-right font-mono">₱{(item.unitMat + item.unitLabor).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td className="px-3 py-2 text-right font-bold text-zinc-900 font-mono">₱{item.total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       </tr>
                     ))}
@@ -665,7 +563,7 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                     {page2Items.some(item => item.category.includes("1C")) && (
                       <>
                         <tr className="bg-zinc-50/50 text-[10px] font-bold text-zinc-800 uppercase font-mono tracking-wide">
-                          <td colSpan={7} className="px-3 py-1.5 border-t border-b border-zinc-200">
+                          <td colSpan={6} className="px-3 py-1.5 border-t border-b border-zinc-200">
                             1C. ELECTRICAL COMPONENTS
                           </td>
                         </tr>
@@ -675,26 +573,7 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                             <td className="px-3 py-2 font-medium text-zinc-900">{item.description}</td>
                             <td className="px-3 py-2 text-center font-mono">{item.qty}</td>
                             <td className="px-3 py-2 text-center font-mono">{item.uom}</td>
-                            <td className="px-3 py-2 text-right font-mono">₱{item.unitMat.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="px-3 py-1 text-right font-mono">
-                              {isDownloadingPdf ? (
-                                <span className="text-[10px] font-mono font-semibold text-zinc-800">
-                                  ₱{item.unitLabor.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                              ) : (
-                                <div className="flex items-center justify-end gap-1">
-                                  <span className="text-zinc-400 text-[10px]">₱</span>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="50"
-                                    value={parseFloat(item.unitLabor.toFixed(2))}
-                                    onChange={(e) => updateUnitLabor(item.id, parseFloat(e.target.value) || 0)}
-                                    className="w-20 text-right bg-zinc-50 border border-zinc-200 hover:border-zinc-300 focus:border-emerald-800 focus:bg-white px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold text-zinc-800 transition-all focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  />
-                                </div>
-                              )}
-                            </td>
+                            <td className="px-3 py-2 text-right font-mono">₱{(item.unitMat + item.unitLabor).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             <td className="px-3 py-2 text-right font-bold text-zinc-900 font-mono">₱{item.total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                           </tr>
                         ))}
@@ -737,11 +616,10 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                     <tr className="bg-zinc-50 border-b border-zinc-200 text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-mono">
                       <th className="px-3 py-2 w-[5%] text-center">NO</th>
                       <th className="px-3 py-2 w-[50%]">DESCRIPTION</th>
-                      <th className="px-3 py-2 w-[8%] text-center">QTY</th>
-                      <th className="px-3 py-2 w-[8%] text-center">UOM</th>
-                      <th className="px-3 py-2 w-[11%] text-right">UNIT MAT.</th>
-                      <th className="px-3 py-2 w-[11%] text-right">UNIT LABOR</th>
-                      <th className="px-3 py-2 w-[11%] text-right">TOTAL</th>
+                      <th className="px-3 py-2 w-[10%] text-center">QTY</th>
+                      <th className="px-3 py-2 w-[10%] text-center">UOM</th>
+                      <th className="px-3 py-2 w-[12%] text-right">UNIT PRICE</th>
+                      <th className="px-3 py-2 w-[13%] text-right">TOTAL</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-150 text-zinc-700">
@@ -749,7 +627,7 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                     {page3Items.some(item => item.category.includes("1C")) && (
                       <>
                         <tr className="bg-zinc-50/50 text-[10px] font-bold text-zinc-800 uppercase font-mono tracking-wide">
-                          <td colSpan={7} className="px-3 py-1.5 border-b border-zinc-200">
+                          <td colSpan={6} className="px-3 py-1.5 border-b border-zinc-200">
                             1C. ELECTRICAL COMPONENTS (CONTINUED)
                           </td>
                         </tr>
@@ -759,26 +637,7 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                             <td className="px-3 py-2 font-medium text-zinc-900">{item.description}</td>
                             <td className="px-3 py-2 text-center font-mono">{item.qty}</td>
                             <td className="px-3 py-2 text-center font-mono">{item.uom}</td>
-                            <td className="px-3 py-2 text-right font-mono">₱{item.unitMat.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="px-3 py-1 text-right font-mono">
-                              {isDownloadingPdf ? (
-                                <span className="text-[10px] font-mono font-semibold text-zinc-800">
-                                  ₱{item.unitLabor.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                              ) : (
-                                <div className="flex items-center justify-end gap-1">
-                                  <span className="text-zinc-400 text-[10px]">₱</span>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="50"
-                                    value={parseFloat(item.unitLabor.toFixed(2))}
-                                    onChange={(e) => updateUnitLabor(item.id, parseFloat(e.target.value) || 0)}
-                                    className="w-20 text-right bg-zinc-50 border border-zinc-200 hover:border-zinc-300 focus:border-emerald-800 focus:bg-white px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold text-zinc-800 transition-all focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  />
-                                </div>
-                              )}
-                            </td>
+                            <td className="px-3 py-2 text-right font-mono">₱{(item.unitMat + item.unitLabor).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             <td className="px-3 py-2 text-right font-bold text-zinc-900 font-mono">₱{item.total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                           </tr>
                         ))}
@@ -789,7 +648,7 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                     {page3Items.some(item => item.category.includes("1D")) && (
                       <>
                         <tr className="bg-zinc-50/50 text-[10px] font-bold text-zinc-800 uppercase font-mono tracking-wide">
-                          <td colSpan={7} className="px-3 py-1.5 border-t border-b border-zinc-200">
+                          <td colSpan={6} className="px-3 py-1.5 border-t border-b border-zinc-200">
                             1D. SERVICES &amp; DECOMMISSIONING
                           </td>
                         </tr>
@@ -799,44 +658,12 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                             <td className="px-3 py-2 font-medium text-zinc-900">{item.description}</td>
                             <td className="px-3 py-2 text-center font-mono">{item.qty}</td>
                             <td className="px-3 py-2 text-center font-mono">{item.uom}</td>
-                            <td className="px-3 py-2 text-right font-mono">₱{item.unitMat.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="px-3 py-1 text-right font-mono">
-                              {isDownloadingPdf ? (
-                                <span className="text-[10px] font-mono font-semibold text-zinc-800">
-                                  ₱{item.unitLabor.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                              ) : (
-                                <div className="flex items-center justify-end gap-1">
-                                  <span className="text-zinc-400 text-[10px]">₱</span>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="50"
-                                    value={parseFloat(item.unitLabor.toFixed(2))}
-                                    onChange={(e) => updateUnitLabor(item.id, parseFloat(e.target.value) || 0)}
-                                    className="w-20 text-right bg-zinc-50 border border-zinc-200 hover:border-zinc-300 focus:border-emerald-800 focus:bg-white px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold text-zinc-800 transition-all focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  />
-                                </div>
-                              )}
-                            </td>
+                            <td className="px-3 py-2 text-right font-mono">₱{(item.unitMat + item.unitLabor).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             <td className="px-3 py-2 text-right font-bold text-zinc-900 font-mono">₱{item.total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                           </tr>
                         ))}
                       </>
                     )}
-
-                    {/* 1E. Engineering & Design */}
-                    {page3Items.filter(item => item.category.includes("1E")).map((item, idx) => (
-                      <tr key={idx} className="hover:bg-zinc-50/30">
-                        <td className="px-3 py-2 text-center text-zinc-400 font-mono">{item.no}</td>
-                        <td className="px-3 py-2 font-medium text-zinc-900">{item.description}</td>
-                        <td className="px-3 py-2 text-center font-mono">{item.qty}</td>
-                        <td className="px-3 py-2 text-center font-mono">{item.uom}</td>
-                        <td className="px-3 py-2 text-right font-mono">₱{item.unitMat.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td className="px-3 py-2 text-right font-mono">₱{item.unitLabor.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td className="px-3 py-2 text-right font-bold text-zinc-900 font-mono">₱{item.total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                      </tr>
-                    ))}
                   </tbody>
                 </table>
               </div>
@@ -848,12 +675,6 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                     <span className="font-sans">Subtotal</span>
                     <span className="font-mono font-semibold text-zinc-900">
                       PHP {subtotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-zinc-500">
-                    <span className="font-sans">VAT ({vatPercent}%)</span>
-                    <span className="font-mono">
-                      PHP {vat.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                   
