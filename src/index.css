@@ -58,8 +58,7 @@
   #proposal-page-1,
   #proposal-page-2,
   #proposal-page-3,
-  #proposal-page-4,
-  #proposal-page-5 {
+  #proposal-page-4 {
     width: 210mm !important;
     height: 297mm !important;
     margin: 0 auto !important;
@@ -76,7 +75,7 @@
   }
 
   /* Remove page-break-after on the last page */
-  #proposal-page-5 {
+  #proposal-page-4 {
     page-break-after: avoid !important;
     break-after: avoid !important;
   }

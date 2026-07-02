@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { HVACProposalPayload, CostCalculationResponse } from "../types";
 import { FileText, Download, CheckSquare, Award, FileJson, Mail, Building, AlertTriangle } from "lucide-react";
+import logoImg from "../../logo.webp";
 
 interface CleanProposalDocumentProps {
   payload: HVACProposalPayload;
@@ -168,20 +169,10 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
     URL.revokeObjectURL(url);
   };
 
-  // M&G Custom Logo SVG Icon
+  // M&G Custom Logo Icon using logo.webp
   const MGLogo = () => (
     <div className="flex flex-col items-center justify-center scale-90">
-      <svg width="65" height="55" viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm">
-        {/* Blue Main House/M shape structure */}
-        <path d="M20 75V40L60 15L100 40V75" stroke="#102A83" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M40 75V50H80V75" stroke="#102A83" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
-        
-        {/* Green Rising Roof / Arrow of wholesale trading */}
-        <path d="M10 45L60 7L110 45" stroke="#005A36" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-        
-        {/* Dynamic Green Arrow Pointer inside house */}
-        <path d="M60 48L85 24M85 24H68M85 24V40" stroke="#005A36" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <img src={logoImg} alt="M&G Logo" className="w-[65px] h-[55px] object-contain drop-shadow-sm" />
       <div className="text-[10px] font-extrabold text-[#102A83] uppercase mt-1 tracking-wider leading-none text-center">
         M&G Non Specialized
       </div>
@@ -310,9 +301,32 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
     };
   });
 
-  // Split items across Page 2 and Page 3 dynamically
-  const page2Items = formattedItems.slice(0, 5);
-  const page3Items = formattedItems.slice(5);
+  // Scope of Work items
+  const scopeOfWorkItems = [
+    { id: 1, text: "Conduct detailed site ocular inspection to verify structural integrity of the walls and electrical configurations." },
+    { id: 2, text: "Mobilize highly qualified professional HVAC technical team and specialized crew to the site." },
+    { id: 3, text: `Deliver all premium ${equipment_brand} fan coil units, condensing modules, refrigerant pipelines, and breakers at site.` },
+    { id: 4, text: "Conduct rigorous pre-installation checks and civil safety clearances at target installation areas." },
+    { id: 5, text: "Securely mount indoor fan coil elements to structural walls using heavy-duty anchor brackets and expansion bolts." },
+    { id: 6, text: "Lay out refrigeration lines utilizing top-tier insulated copper coils along the shortest route possible." },
+    { id: 7, text: "Interconnect copper pipelines and conduct nitrogen pressure decay leak checks and precise vacuum purging." },
+    { id: 8, text: "Securely mount the isolated circuit breaker systems for both indoor terminals and outdoor units." },
+    { id: 9, text: "Lay out high-resistance protective conduits along external masonry runs and seal connections tightly." },
+    { id: 10, text: "Perform precise electrical terminations and verify parallel isolation grids match the required specifications." },
+    { id: 11, text: "Conduct critical pre-commissioning checks including insulation resistance testing and grounding continuity." },
+    { id: 12, text: "Restoring and plastering of structural holes and wall penetrations created by our team (excluding repainting and masonry reconstruction)." },
+    { id: 13, text: "Inclusion of 1 PC specialized gravity drain unit per system installation and layout of external drain line runs under standard PVC/EMT containment." },
+    { id: 14, text: "Power up the system and log performance metrics (airflow speeds, supply/return differential, drain flow)." },
+    { id: 15, text: "Demobilize and clear installation zone of civil debris and residual packaging." },
+  ];
+
+  // Dynamically filter Scope of Work: remove 5-11 and 13 if Window Type
+  const filteredScopeOfWork = scopeOfWorkItems.filter(item => {
+    if (form_factor === "Window Type") {
+      return ![5, 6, 7, 8, 9, 10, 11, 13].includes(item.id);
+    }
+    return true;
+  });
 
   return (
     <div id="clean-proposal-view-container" className="space-y-6">
@@ -486,7 +500,7 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
             {/* Footer page identifier */}
             <div className="flex justify-between items-center text-[9px] font-mono text-zinc-400 border-t border-zinc-150 pt-3">
               <span>M&G Non Specialized Wholesale Trading</span>
-              <span>Page 1 of 5</span>
+              <span>Page 1 of 4</span>
             </div>
           </div>
 
@@ -511,7 +525,7 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                 The system components, materials, and services detailed below will be delivered and installed:
               </p>
 
-              {/* Table section 1 */}
+              {/* Table section */}
               <div className="mt-6 overflow-hidden border border-zinc-200 rounded-lg">
                 <table className="w-full text-left text-[11px] border-collapse">
                   <thead>
@@ -531,7 +545,7 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                         1A. SYSTEM EQUIPMENTS
                       </td>
                     </tr>
-                    {page2Items.filter(item => item.category.includes("1A")).map((item, idx) => (
+                    {formattedItems.filter(item => item.category.includes("1A")).map((item, idx) => (
                       <tr key={idx} className="hover:bg-zinc-50/30">
                         <td className="px-3 py-2 text-center text-zinc-400 font-mono">{item.no}</td>
                         <td className="px-3 py-2 font-medium text-zinc-900">{item.description}</td>
@@ -548,7 +562,7 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                         1B. INSTALLATION &amp; REFRIGERATION MATERIALS
                       </td>
                     </tr>
-                    {page2Items.filter(item => item.category.includes("1B")).map((item, idx) => (
+                    {formattedItems.filter(item => item.category.includes("1B")).map((item, idx) => (
                       <tr key={idx} className="hover:bg-zinc-50/30">
                         <td className="px-3 py-2 text-center text-zinc-400 font-mono">{item.no}</td>
                         <td className="px-3 py-2 font-medium text-zinc-900">{item.description}</td>
@@ -559,79 +573,15 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                       </tr>
                     ))}
 
-                    {/* 1C. Electrical - Start of page 2 part */}
-                    {page2Items.some(item => item.category.includes("1C")) && (
+                    {/* 1C. Electrical */}
+                    {formattedItems.some(item => item.category.includes("1C")) && (
                       <>
                         <tr className="bg-zinc-50/50 text-[10px] font-bold text-zinc-800 uppercase font-mono tracking-wide">
                           <td colSpan={6} className="px-3 py-1.5 border-t border-b border-zinc-200">
                             1C. ELECTRICAL COMPONENTS
                           </td>
                         </tr>
-                        {page2Items.filter(item => item.category.includes("1C")).map((item, idx) => (
-                          <tr key={idx} className="hover:bg-zinc-50/30">
-                            <td className="px-3 py-2 text-center text-zinc-400 font-mono">{item.no}</td>
-                            <td className="px-3 py-2 font-medium text-zinc-900">{item.description}</td>
-                            <td className="px-3 py-2 text-center font-mono">{item.qty}</td>
-                            <td className="px-3 py-2 text-center font-mono">{item.uom}</td>
-                            <td className="px-3 py-2 text-right font-mono">₱{(item.unitMat + item.unitLabor).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="px-3 py-2 text-right font-bold text-zinc-900 font-mono">₱{item.total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                          </tr>
-                        ))}
-                      </>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Footer page identifier */}
-            <div className="flex justify-between items-center text-[9px] font-mono text-zinc-400 border-t border-zinc-150 pt-3">
-              <span>M&G Non Specialized Wholesale Trading</span>
-              <span>Page 2 of 5</span>
-            </div>
-          </div>
-
-
-          {/* ==================== PAGE 3 ==================== */}
-          <div 
-            id="proposal-page-3" 
-            className="w-[794px] h-[1123px] bg-white p-[60px] shadow-md border border-zinc-250 relative flex flex-col justify-between text-zinc-800 font-sans select-text shrink-0"
-            style={{ boxSizing: "border-box" }}
-          >
-            <div>
-              {/* Header Letterhead */}
-              <div className="flex justify-between items-center border-b border-zinc-150 pb-4 mb-6">
-                <span className="text-[10px] font-mono text-[#102A83] font-bold">M&G COMMERCIAL CONTRACTS OFFICE</span>
-                <span className="text-[10px] font-mono text-zinc-400">{referenceNo}</span>
-              </div>
-
-              <h2 className="text-lg font-black text-zinc-950 tracking-tight border-b-2 border-zinc-900 pb-2 uppercase font-sans">
-                1. SCOPE OF SUPPLY (CONTINUED)
-              </h2>
-
-              {/* Table section 2 */}
-              <div className="mt-6 overflow-hidden border border-zinc-200 rounded-lg">
-                <table className="w-full text-left text-[11px] border-collapse">
-                  <thead>
-                    <tr className="bg-zinc-50 border-b border-zinc-200 text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-mono">
-                      <th className="px-3 py-2 w-[5%] text-center">NO</th>
-                      <th className="px-3 py-2 w-[50%]">DESCRIPTION</th>
-                      <th className="px-3 py-2 w-[10%] text-center">QTY</th>
-                      <th className="px-3 py-2 w-[10%] text-center">UOM</th>
-                      <th className="px-3 py-2 w-[12%] text-right">UNIT PRICE</th>
-                      <th className="px-3 py-2 w-[13%] text-right">TOTAL</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-150 text-zinc-700">
-                    {/* 1C. Electrical - Remaining items */}
-                    {page3Items.some(item => item.category.includes("1C")) && (
-                      <>
-                        <tr className="bg-zinc-50/50 text-[10px] font-bold text-zinc-800 uppercase font-mono tracking-wide">
-                          <td colSpan={6} className="px-3 py-1.5 border-b border-zinc-200">
-                            1C. ELECTRICAL COMPONENTS (CONTINUED)
-                          </td>
-                        </tr>
-                        {page3Items.filter(item => item.category.includes("1C")).map((item, idx) => (
+                        {formattedItems.filter(item => item.category.includes("1C")).map((item, idx) => (
                           <tr key={idx} className="hover:bg-zinc-50/30">
                             <td className="px-3 py-2 text-center text-zinc-400 font-mono">{item.no}</td>
                             <td className="px-3 py-2 font-medium text-zinc-900">{item.description}</td>
@@ -645,14 +595,14 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                     )}
 
                     {/* 1D. Dismantling */}
-                    {page3Items.some(item => item.category.includes("1D")) && (
+                    {formattedItems.some(item => item.category.includes("1D")) && (
                       <>
                         <tr className="bg-zinc-50/50 text-[10px] font-bold text-zinc-800 uppercase font-mono tracking-wide">
                           <td colSpan={6} className="px-3 py-1.5 border-t border-b border-zinc-200">
                             1D. SERVICES &amp; DECOMMISSIONING
                           </td>
                         </tr>
-                        {page3Items.filter(item => item.category.includes("1D")).map((item, idx) => (
+                        {formattedItems.filter(item => item.category.includes("1D")).map((item, idx) => (
                           <tr key={idx} className="hover:bg-zinc-50/30">
                             <td className="px-3 py-2 text-center text-zinc-400 font-mono">{item.no}</td>
                             <td className="px-3 py-2 font-medium text-zinc-900">{item.description}</td>
@@ -693,14 +643,14 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
             {/* Footer page identifier */}
             <div className="flex justify-between items-center text-[9px] font-mono text-zinc-400 border-t border-zinc-150 pt-3">
               <span>M&G Non Specialized Wholesale Trading</span>
-              <span>Page 3 of 5</span>
+              <span>Page 2 of 4</span>
             </div>
           </div>
 
 
-          {/* ==================== PAGE 4 ==================== */}
+          {/* ==================== PAGE 3 ==================== */}
           <div 
-            id="proposal-page-4" 
+            id="proposal-page-3" 
             className="w-[794px] h-[1123px] bg-white p-[60px] shadow-md border border-zinc-250 relative flex flex-col justify-between text-zinc-800 font-sans select-text shrink-0"
             style={{ boxSizing: "border-box" }}
           >
@@ -721,66 +671,14 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
                   </h3>
                   
                   <div className="space-y-3.5 text-[9.5px] leading-relaxed text-zinc-600 font-sans">
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">01</span>
-                      <p>Conduct detailed site ocular inspection to verify structural integrity of the walls and electrical configurations.</p>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">02</span>
-                      <p>Mobilize highly qualified professional HVAC technical team and specialized crew to the site.</p>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">03</span>
-                      <p>Deliver all premium {equipment_brand} fan coil units, condensing modules, refrigerant pipelines, and breakers at site.</p>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">04</span>
-                      <p>Conduct rigorous pre-installation checks and civil safety clearances at target installation areas.</p>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">05</span>
-                      <p>Securely mount indoor fan coil elements to structural walls using heavy-duty anchor brackets and expansion bolts.</p>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">06</span>
-                      <p>Lay out refrigeration lines utilizing top-tier insulated copper coils along the shortest route possible.</p>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">07</span>
-                      <p>Interconnect copper pipelines and conduct nitrogen pressure decay leak checks and precise vacuum purging.</p>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">08</span>
-                      <p>Securely mount the isolated circuit breaker systems for both indoor terminals and outdoor units.</p>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">09</span>
-                      <p>Lay out high-resistance protective conduits along external masonry runs and seal connections tightly.</p>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">10</span>
-                      <p>Perform precise electrical terminations and verify parallel isolation grids match the required specifications.</p>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">11</span>
-                      <p>Conduct critical pre-commissioning checks including insulation resistance testing and grounding continuity.</p>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">12</span>
-                      <p>Restoring and plastering of structural holes and wall penetrations created by our team (excluding repainting and masonry reconstruction).</p>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">13</span>
-                      <p>Inclusion of 1 PC specialized gravity drain unit per system installation and layout of external drain line runs under standard PVC/EMT containment.</p>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">14</span>
-                      <p>Power up the system and log performance metrics (airflow speeds, supply/return differential, drain flow).</p>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">15</span>
-                      <p>Demobilize and clear installation zone of civil debris and residual packaging.</p>
-                    </div>
+                    {filteredScopeOfWork.map((item, idx) => (
+                      <div key={item.id} className="flex items-start">
+                        <span className="font-bold text-zinc-900 w-5 shrink-0 font-mono">
+                          {String(idx + 1).padStart(2, "0")}
+                        </span>
+                        <p>{item.text}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -825,14 +723,14 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
             {/* Footer page identifier */}
             <div className="flex justify-between items-center text-[9px] font-mono text-zinc-400 border-t border-zinc-150 pt-3">
               <span>M&G Non Specialized Wholesale Trading</span>
-              <span>Page 4 of 5</span>
+              <span>Page 3 of 4</span>
             </div>
           </div>
 
 
-          {/* ==================== PAGE 5 ==================== */}
+          {/* ==================== PAGE 4 ==================== */}
           <div 
-            id="proposal-page-5" 
+            id="proposal-page-4" 
             className="w-[794px] h-[1123px] bg-white p-[60px] shadow-md border border-zinc-250 relative flex flex-col justify-between text-zinc-800 font-sans select-text shrink-0"
             style={{ boxSizing: "border-box" }}
           >
@@ -1130,7 +1028,7 @@ export default function CleanProposalDocument({ payload, calculation, onChangeAc
             {/* Footer page identifier */}
             <div className="flex justify-between items-center text-[9px] font-mono text-zinc-400 border-t border-zinc-150 pt-3">
               <span>M&G Non Specialized Wholesale Trading</span>
-              <span>Page 5 of 5</span>
+              <span>Page 4 of 4</span>
             </div>
           </div>
 
