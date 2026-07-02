@@ -8,6 +8,7 @@ import InteractiveForm from "./components/InteractiveForm";
 import CostBreakdownReport from "./components/CostBreakdownReport";
 import TransactionLog from "./components/TransactionLog";
 import CleanProposalDocument from "./components/CleanProposalDocument";
+import { calculateCost } from "./utils/calculator";
 import { 
   Building2, 
   CheckCircle, 
@@ -82,8 +83,29 @@ export default function App() {
     }
   }, [activeTab]);
 
-  // Calculate detailed financial breakdown from the Express server API
+  // Calculate detailed financial breakdown from the Express server API with client-side fallback
   const syncCalculationAPI = async (payload: HVACProposalPayload, skipLog: boolean = false) => {
+    // 1. Calculate instantly client-side so it displays right away
+    const clientCalc = calculateCost(payload);
+    setCalculation(clientCalc);
+
+    if (!skipLog) {
+      const key = `tx-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const newTx: HistoricalTransaction = {
+        id: key,
+        timestamp: new Date().toLocaleTimeString(),
+        payload,
+        calculation: clientCalc,
+      };
+      setHistory(prev => {
+        if (prev.length > 0 && JSON.stringify(prev[0].payload) === JSON.stringify(payload)) {
+          return prev;
+        }
+        return [newTx, ...prev.slice(0, 9)];
+      });
+    }
+
+    // 2. Fetch from backend to sync or log, but ignore failures silently since client-side is already done
     try {
       const response = await fetch("/api/calculate", {
         method: "POST",
@@ -91,35 +113,12 @@ export default function App() {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
-
       if (response.ok) {
+        const data = await response.json();
         setCalculation(data);
-        if (!skipLog) {
-          // Add to historical cache safely with a robust, guaranteed-unique key
-          const key = `tx-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-          const newTx: HistoricalTransaction = {
-            id: key,
-            timestamp: new Date().toLocaleTimeString(),
-            payload,
-            calculation: data,
-          };
-          setHistory(prev => {
-            // Prevent consecutive duplicate history items to keep the logs pristine
-            if (prev.length > 0 && JSON.stringify(prev[0].payload) === JSON.stringify(payload)) {
-              return prev;
-            }
-            return [newTx, ...prev.slice(0, 9)];
-          });
-        }
-      } else {
-        setNotification({
-          type: "error",
-          text: data.error || "Failed to calculate pricing values."
-        });
       }
     } catch (err: any) {
-      console.warn("Pricing synchronization error:", err);
+      console.warn("Pricing synchronization server error (using client-side fallback):", err);
     }
   };
 
